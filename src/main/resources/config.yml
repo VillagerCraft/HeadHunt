@@ -1,0 +1,26 @@
+# Global interaction — LEFT, RIGHT, or BOTH
+click-mode: RIGHT
+
+# Hunt template — hunt.name must match /headhunt create <name>
+hunt:
+  name: example-hunt
+  timezone: server
+  schedule:
+    start: "2026-06-01T00:00:00"
+    end: "2026-06-30T23:59:59"
+
+# Reward commands (console) — by-set keys must match sets from /headhunt set create
+rewards:
+  head:
+    default: []
+    by-head: {}
+  set:
+    default: []
+    by-set: {}
+  hunt:
+    commands: []
+
+# Broadcast toggles (opt-in per message type)
+broadcast:
+  set-complete: false
+  hunt-complete: true

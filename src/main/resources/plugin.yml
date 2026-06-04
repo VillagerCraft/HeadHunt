@@ -1,0 +1,62 @@
+name: HeadHunt
+description: ${project.description}
+prefix: HeadHunt
+version: '${version}'
+
+main: nl.villagercraft.paper.HeadHuntPlugin
+api-version: '1.21.11'
+load: POSTWORLD
+softdepend: [HeadDatabase]
+
+authors: [ Bart Kampert ]
+website: https://kampert.it/
+
+permissions:
+  headhunt.admin.hunt.create:
+    description: Create hunt from config snapshot (inactive until activate)
+    default: op
+  headhunt.admin.hunt.activate:
+    description: Activate hunt so players can register finds
+    default: op
+  headhunt.admin.hunt.delete:
+    description: Delete hunt
+    default: op
+  headhunt.admin.hunt.schedule:
+    description: Pause and resume hunt
+    default: op
+  headhunt.admin.set.create:
+    description: Create set
+    default: op
+  headhunt.admin.set.list:
+    description: List sets
+    default: op
+  headhunt.admin.head.add:
+    description: Register head
+    default: op
+  headhunt.admin.head.remove:
+    description: Unregister head
+    default: op
+  headhunt.admin.head.inspect:
+    description: Inspect head finders
+    default: op
+  headhunt.admin.player.reset:
+    description: Reset player progress
+    default: op
+  headhunt.admin.player.ban:
+    description: Ban and unban players
+    default: op
+  headhunt.play.find:
+    description: Register finds by clicking
+    default: true
+  headhunt.play.progress.self:
+    description: View own progress
+    default: true
+  headhunt.play.progress.other:
+    description: View another player's progress
+    default: op
+  headhunt.play.leaderboard:
+    description: View leaderboard
+    default: true
+  headhunt.play.stats.popular:
+    description: View most-found heads
+    default: true
