@@ -173,6 +173,9 @@ public final class HuntService {
     if (hunt.isActivated()) {
       return CommandOutcome.message("hunt-already-activated");
     }
+    if (HuntHeads.totalHeadCount(hunt) == 0) {
+      return CommandOutcome.message("hunt-cannot-activate-empty");
+    }
 
     hunt.setActivated(true);
     activeHuntRepository.setActiveHunt(hunt);
@@ -360,19 +363,22 @@ public final class HuntService {
       return CommandOutcome.message("no-hunt");
     }
 
-    Optional<Player> targetOptional = PlayerLookup.onlinePlayer(playerName);
+    Optional<PlayerLookup.ResolvedPlayer> targetOptional =
+        PlayerLookup.resolveKnownPlayer(playerName);
     if (targetOptional.isEmpty()) {
       return CommandOutcome.message("player-not-found", Map.of("player", playerName));
     }
 
     ActiveHunt hunt = huntOptional.get();
-    UUID playerId = targetOptional.get().getUniqueId();
+    PlayerLookup.ResolvedPlayer target = targetOptional.get();
+    UUID playerId = target.uuid();
     String huntName = hunt.getName();
 
     return switch (scope.toLowerCase()) {
-      case "hunt" -> resetHunt(hunt, huntName, playerId, playerName, identifier);
-      case "set" -> resetSet(hunt, huntName, playerId, playerName, identifier);
-      case "head" -> resetHead(hunt, huntName, playerId, playerName, identifier);
+      case "hunt" ->
+          resetHunt(hunt, huntName, playerId, target.displayName(), identifier);
+      case "set" -> resetSet(hunt, huntName, playerId, target.displayName(), identifier);
+      case "head" -> resetHead(hunt, huntName, playerId, target.displayName(), identifier);
       default -> CommandOutcome.message("reset-invalid-scope");
     };
   }
@@ -422,20 +428,23 @@ public final class HuntService {
       return CommandOutcome.message("no-hunt");
     }
 
-    Optional<Player> targetOptional = PlayerLookup.onlinePlayer(playerName);
+    Optional<PlayerLookup.ResolvedPlayer> targetOptional =
+        PlayerLookup.resolveKnownPlayer(playerName);
     if (targetOptional.isEmpty()) {
       return CommandOutcome.message("player-not-found", Map.of("player", playerName));
     }
 
     ActiveHunt hunt = huntOptional.get();
-    UUID playerId = targetOptional.get().getUniqueId();
+    PlayerLookup.ResolvedPlayer target = targetOptional.get();
+    UUID playerId = target.uuid();
     if (hunt.getBanlist().contains(playerId)) {
-      return CommandOutcome.message("player-already-banned", Map.of("player", playerName));
+      return CommandOutcome.message(
+          "player-already-banned", Map.of("player", target.displayName()));
     }
 
     hunt.getBanlist().add(playerId);
     activeHuntRepository.setActiveHunt(hunt);
-    return CommandOutcome.message("player-banned", Map.of("player", playerName));
+    return CommandOutcome.message("player-banned", Map.of("player", target.displayName()));
   }
 
   public CommandOutcome unban(String playerName) {
@@ -444,19 +453,22 @@ public final class HuntService {
       return CommandOutcome.message("no-hunt");
     }
 
-    Optional<Player> targetOptional = PlayerLookup.onlinePlayer(playerName);
+    Optional<PlayerLookup.ResolvedPlayer> targetOptional =
+        PlayerLookup.resolveKnownPlayer(playerName);
     if (targetOptional.isEmpty()) {
       return CommandOutcome.message("player-not-found", Map.of("player", playerName));
     }
 
     ActiveHunt hunt = huntOptional.get();
-    UUID playerId = targetOptional.get().getUniqueId();
+    PlayerLookup.ResolvedPlayer target = targetOptional.get();
+    UUID playerId = target.uuid();
     if (!hunt.getBanlist().remove(playerId)) {
-      return CommandOutcome.message("player-not-banned", Map.of("player", playerName));
+      return CommandOutcome.message(
+          "player-not-banned", Map.of("player", target.displayName()));
     }
 
     activeHuntRepository.setActiveHunt(hunt);
-    return CommandOutcome.message("player-unbanned", Map.of("player", playerName));
+    return CommandOutcome.message("player-unbanned", Map.of("player", target.displayName()));
   }
 
   public CommandOutcome leaderboard() {
@@ -535,14 +547,21 @@ public final class HuntService {
     String huntName = hunt.getName();
     String subjectName = targetPlayerName.orElse(viewerName);
 
-    Optional<Player> subjectOptional = PlayerLookup.onlinePlayer(subjectName);
+    Optional<PlayerLookup.ResolvedPlayer> subjectOptional =
+        PlayerLookup.resolveKnownPlayer(subjectName);
     if (subjectOptional.isEmpty()) {
       return CommandOutcome.message("player-not-found", Map.of("player", subjectName));
     }
 
-    UUID playerId = subjectOptional.get().getUniqueId();
-    int total = HuntHeads.totalHeadCount(hunt);
+    PlayerLookup.ResolvedPlayer subject = subjectOptional.get();
+    UUID playerId = subject.uuid();
     int found = findRepository.countFindsForPlayer(huntName, playerId);
+    if (found < 1) {
+      return CommandOutcome.message(
+          "progress-not-started", Map.of("player", subject.displayName()));
+    }
+
+    int total = HuntHeads.totalHeadCount(hunt);
 
     Set<String> foundHeads = new HashSet<>();
     for (Find find : findRepository.getFindsForHunt(huntName)) {
@@ -560,7 +579,7 @@ public final class HuntService {
         "progress",
         Map.of(
             "player",
-            subjectName,
+            subject.displayName(),
             "found",
             String.valueOf(found),
             "total",

@@ -77,6 +77,12 @@ public final class HeadHuntCommands {
                                       runResume(
                                           messagesService, huntService, context.getSource())))
                       .then(
+                          Commands.literal("reload")
+                              .executes(
+                                  context ->
+                                      runReload(
+                                          plugin, messagesService, context.getSource())))
+                      .then(
                           Commands.literal("delete")
                               .executes(
                                   context ->
@@ -310,6 +316,19 @@ public final class HeadHuntCommands {
     return Command.SINGLE_SUCCESS;
   }
 
+  private static int runReload(
+      HeadHuntPlugin plugin, MessagesService messagesService, CommandSourceStack source) {
+    CommandSender sender = source.getSender();
+    if (!sender.hasPermission(PERM_HUNT_CREATE)) {
+      sender.sendMessage(messagesService.resolve("no-permission"));
+      return Command.SINGLE_SUCCESS;
+    }
+
+    plugin.reloadPluginMessages();
+    sender.sendMessage(messagesService.resolve("messages-reloaded"));
+    return Command.SINGLE_SUCCESS;
+  }
+
   private static int runDelete(
       MessagesService messagesService,
       HuntService huntService,
@@ -516,6 +535,7 @@ public final class HeadHuntCommands {
       return Command.SINGLE_SUCCESS;
     }
 
+    // identity: profile UUID string persisted on the head record (lookup is by block location in v1)
     sendOutcome(
         sender,
         messagesService,

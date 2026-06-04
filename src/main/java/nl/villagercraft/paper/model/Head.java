@@ -1,5 +1,6 @@
 package nl.villagercraft.paper.model;
 
+/** Registered player skull at a fixed block. Lookup in v1 is by world + coordinates. */
 public final class Head {
 
   private String name;
@@ -8,6 +9,7 @@ public final class Head {
   private int x;
   private int y;
   private int z;
+  /** Profile UUID string from the skull at registration; part of stored head record (v2 may use in key). */
   private String identity;
 
   public Head() {}

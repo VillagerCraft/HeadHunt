@@ -27,6 +27,7 @@ public final class HeadBlockSupport {
     return type == Material.PLAYER_HEAD || type == Material.PLAYER_WALL_HEAD;
   }
 
+  /** Profile UUID used as head {@code identity} when registering via {@code /headhunt add}. */
   public static Optional<UUID> profileUuid(Block block) {
     if (!(block.getState() instanceof Skull skull)) {
       return Optional.empty();

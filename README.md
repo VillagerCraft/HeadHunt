@@ -6,15 +6,13 @@ A Paper plugin for Minecraft that runs **head hunts**: admins hide **player skul
 
 
 
-> **Status:** Sprints **1–8** complete — next: Sprint 9 (HeadDatabase). Product spec: [`.cursor/prd/`](.cursor/prd/).
+> **Status:** **v1 ready** — Sprints **1–9** complete. Product spec: [`.cursor/prd/`](.cursor/prd/).
 
 ## Implementation status
 
-**Current milestone:** Sprint 8 — Query & stats (complete)
+**Current milestone:** Sprint 9 — Hardening (complete) — v1 ready
 
-**Next up:** Sprint 9 — HeadDatabase (not started) — [sprint doc](.cursor/prd/sprints/sprint-09-headdatabase.md)
-
-**MVP:** Sprints 1–5 · **v1:** Sprints 1–10
+**MVP:** Sprints 1–5 · **v1:** Sprints 1–9 (complete)
 
 ## How it works
 
@@ -34,7 +32,7 @@ A Paper plugin for Minecraft that runs **head hunts**: admins hide **player skul
 
 - **Leaderboard**, progress inspection, and “most found head” stats — all via chat commands for now.
 
-- Hunt **schedule** (start/end) is set in `config.yml`; use `/headhunt pause` / `resume` to freeze finds.
+- Hunt **schedule** (start/end) is optional in runtime `plugins/HeadHunt/data/active-hunt.yml` (template in `config.yml` is not applied on create); use `/headhunt pause` / `resume` to freeze finds.
 
 
 
@@ -54,13 +52,12 @@ Update checkboxes when each sprint completes (see the sprint doc for the exact l
 - [x] **Sprint 4 — Click-to-find** — configurable interaction mode, find records
 - [x] **Sprint 5 — Rewards** — three-tier console commands (head → set → hunt)
 
-### Post-MVP v1 (Sprints 6–10)
+### Post-MVP v1 (Sprints 6–9)
 
 - [x] **Sprint 6 — Delete, archive & reset** — delete hunt, archive finds + completions, `--delete-heads`, progress reset
 - [x] **Sprint 7 — Banlist** — ban/unban, silent block on finds/rewards, leaderboard exclusion
 - [x] **Sprint 8 — Query & stats** — leaderboard, progress, inspect, popular heads
-- [ ] **Sprint 9 — HeadDatabase** — optional HDB identity in head key
-- [ ] **Sprint 10 — Hardening** — offline names, edge cases, v1 test matrix
+- [x] **Sprint 9 — Hardening** — offline names, edge cases, reload messages, v1 test matrix
 
 
 
@@ -71,10 +68,6 @@ Update checkboxes when each sprint completes (see the sprint doc for the exact l
 - **Java 21**
 
 - **Paper** server **1.21.11** (or compatible build)
-
-- **HeadDatabase** — optional; when installed, head identity may include an HDB ID
-
-
 
 No PlaceholderAPI required. Reward commands use built-in placeholders (`{player}`, `{head}`, etc.).
 
@@ -117,25 +110,26 @@ The shaded plugin JAR is written to `target/`. Copy it into your server's `plugi
 | Command | Permission | Description |
 |---------|------------|-------------|
 | `/headhunt create <name>` | `headhunt.admin.hunt.create` | Create hunt from config snapshot (inactive, no schedule) |
-| `/headhunt activate` | `headhunt.admin.hunt.activate` | Enable find registration for the current hunt |
+| `/headhunt reload` | `headhunt.admin.hunt.create` | Reload `messages.yml` from disk (does not change hunt or config snapshot) |
+| `/headhunt activate` | `headhunt.admin.hunt.activate` | Enable find registration (requires at least one registered head) |
 | `/headhunt pause` / `resume` | `headhunt.admin.hunt.schedule` | Pause or resume find registration |
 | `/headhunt set create <name>` | `headhunt.admin.set.create` | Create a named set in the current hunt |
 | `/headhunt set list` | `headhunt.admin.set.list` | List sets in the current hunt |
 | `/headhunt add <set> <headName>` | `headhunt.admin.head.add` | Register targeted player skull in the current hunt |
 | `/headhunt remove` | `headhunt.admin.head.remove` | Unregister targeted head |
 | `/headhunt delete [--delete-heads]` | `headhunt.admin.hunt.delete` | Delete hunt; archive finds + completions; optional block removal |
-| `/headhunt reset <player> <hunt\|set\|head> <identifier>` | `headhunt.admin.player.reset` | Reset player progress (online names in v1) |
-| `/headhunt ban <player>` / `unban <player>` | `headhunt.admin.player.ban` | Hunt banlist (online names in v1) |
+| `/headhunt reset <player> <hunt\|set\|head> <identifier>` | `headhunt.admin.player.reset` | Reset player progress (online or cached offline name) |
+| `/headhunt ban <player>` / `unban <player>` | `headhunt.admin.player.ban` | Hunt banlist (online or cached offline name) |
 | `/headhunt leaderboard` | `headhunt.play.leaderboard` | Active hunt leaderboard |
-| `/headhunt progress [player]` | `headhunt.play.progress.self` / `.other` | Found heads for a player |
+| `/headhunt progress [player]` | `headhunt.play.progress.self` / `.other` | Found heads for a player (requires ≥1 find) |
 | `/headhunt inspect` | `headhunt.admin.head.inspect` | Who found the targeted head |
 | `/headhunt popular` | `headhunt.play.stats.popular` | Heads ranked by distinct finders |
 
-Unknown subcommands return the `command-usage` message. **Planned (Sprints 9–10):** HeadDatabase head identity; offline player name resolution for reset/ban/progress.
+Unknown subcommands return the `command-usage` message.
 
+**Reload:** `/headhunt reload` reloads `messages.yml` only. `config.yml` is re-read on `/headhunt create` only; the active hunt snapshot and schedule in `data/active-hunt.yml` are unchanged by reload.
 
-
-Schedule (start/end) is configured in `config.yml` only in v1.
+**Schedule (v1):** Optional start/end in `data/active-hunt.yml` (ISO-8601). Values in shipped `config.yml` are a template and are not copied on create.
 
 
 
@@ -201,7 +195,7 @@ See [configuration.md](.cursor/prd/configuration.md#messagesyml-conceptual) for 
 
 Reward command placeholders (console only): `{player}`, `{uuid}`, `{head}`, `{set}`, `{hunt}`, `{finds}`, `{set_finds}`, `{set_total}`.
 
-On `/headhunt create`, config is snapshotted into runtime data under `plugins/HeadHunt/data/` (hunt inactive, schedule null in `active-hunt.yml`). Use `/headhunt activate` to enable finds. Optional schedule: edit `active-hunt.yml`. Deleted hunts archive finds and completions under `data/archives/<hunt-name>.yml` (not queryable in-game).
+On `/headhunt create`, config is snapshotted into runtime data under `plugins/HeadHunt/data/` (hunt inactive, schedule null in `active-hunt.yml`). Use `/headhunt activate` to enable finds (at least one head required). Optional schedule: edit `active-hunt.yml`. Use `/headhunt reload` to refresh `messages.yml` without touching hunt data. Deleted hunts archive finds and completions under `data/archives/<hunt-name>.yml` (not queryable in-game).
 
 
 
